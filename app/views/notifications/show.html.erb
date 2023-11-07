@@ -1,0 +1,16 @@
+<% provide(:title, 'Notifications') %>
+<% provide(:button_text, 'Already read') %>
+<h1>通知一覧</h1>
+<% @notifications.each do |notification| %>
+  <% if notification.hidden_notification?(notification) %>
+    <div class ="notifications">
+      <ul>
+        <span class="time_ago"><%= notification.time_ago(notification) %></span>
+        <span class="message"><%= notification.message %></span>
+        <%= form_for notification, url: notification_path(notification), html: { class: "read" }, method: :patch, local: true do |f| %>
+          <%= f.submit "既読" %>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+<% end %>
