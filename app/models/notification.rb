@@ -16,11 +16,6 @@ class Notification < ApplicationRecord
   def notification_first?(user)
     recent_notifications_count = user.notifications.recent_follow($interval, user).count
     recent_notifications_count == 1
-    threshold_notification = user.notifications.where("status = ?",0).first
-      unless threshold_notification.nil?
-        threshold_notification.status = nil
-        threshold_notification.save
-      end
   end
 
   def judge_threshold(user)
