@@ -39,5 +39,4 @@ class Relationship < ApplicationRecord
     else
     end
   end
-
 end
