@@ -5,6 +5,9 @@ class Relationship < ApplicationRecord
   validates :follower_id, presence: true
   validates :followed_id, presence: true
 
+  # コンマの後はスペースを入れましょう！
+  # このメソッドってrelationshipが持つべき責務ですかね？
+  # またレコードが作られるメソッドの場合、メソッド名からそれがわかるようにすべきです！create_follow_notificationとかにしましょう
   def self.follow_notification(user,current_user)
     @notification = user.notifications.new(
         message: current_user.name.to_s + "さんにフォローされました。",
@@ -14,10 +17,12 @@ class Relationship < ApplicationRecord
     if @notification.save
       if @notification.notification_first?(user) || @notification.judge_threshold(user)
       else
+        # if内の処理が無くて、elseだけ書かれているケースは普通ないので、この中をif分に入るようにすると良いかと思います。
         puts "through"
         create_summarize_follow(user,current_user)
       end
     else
+      # 失敗した時のハンドリングをしているのとても良いです。ですがこれではログに表示されるだけで問題が起こったことが検知されないのでエラーを発生させましょう。
       puts "通知の作成に失敗しました。"
     end
   end
