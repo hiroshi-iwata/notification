@@ -1,11 +1,11 @@
 class Notification < ApplicationRecord
-  $interval = Time.now - 5.minutes
-  scope :recent, -> { where("created_at >= ?", $interval)}
-  scope :recent_follow, -> (three_minutes_ago, user) {
-  where("created_at >= ? AND user_id = ? AND (action = 'follow' OR action = 'summarize_follow')", three_minutes_ago, user.id)
+  INTERVAL = 5.minutes.ago
+  scope :recent, -> { where("created_at >= ?", INTERVAL)}
+  scope :recent_follow, -> (notification_interval, user) {
+  where("created_at >= ? AND user_id = ? AND (action = 'follow' OR action = 'summarize_follow')", notification_interval, user.id)
 }
-  scope :only_recent_follow, -> (three_minutes_ago, user) {
-  where("created_at >= ? AND user_id = ? AND action = ?", three_minutes_ago, user.id, "follow")
+  scope :only_recent_follow, -> (notification_interval, user) {
+  where("created_at >= ? AND user_id = ? AND action = ?", notification_interval, user.id, "follow")
 }
   scope :individual_notification, -> (user){ where("user_id = ?", user.id)}
   default_scope -> { order(created_at: :desc) }
@@ -14,14 +14,14 @@ class Notification < ApplicationRecord
   enum status: [:starting]
 
   def notification_first?(user)
-    recent_notifications_count = user.notifications.recent_follow($interval, user).count
+    recent_notifications_count = user.notifications.recent_follow(INTERVAL, user).count
     recent_notifications_count == 1
   end
 
   def judge_threshold(user)
     threshold_notification = user.notifications.where("status = ?",0).first
     unless threshold_notification.nil?
-      if threshold_notification.created_at <= $interval
+      if threshold_notification.created_at <= INTERVAL
         threshold_notification.status = nil
         threshold_notification.save
         return true
@@ -35,8 +35,8 @@ class Notification < ApplicationRecord
 
   def change_hidden(user)
     latest_created_at = user.notifications.maximum(:created_at)
-    user.notifications.where('created_at >= ? AND created_at < ?', $interval, latest_created_at).update(read: true)
-    oldest_within_five_minutes = user.notifications.only_recent_follow($interval, user).last
+    user.notifications.where('created_at >= ? AND created_at < ?', INTERVAL, latest_created_at).update(read: true)
+    oldest_within_five_minutes = user.notifications.only_recent_follow(INTERVAL, user).last
     oldest_within_five_minutes.status = 0
     oldest_within_five_minutes.save
   end
