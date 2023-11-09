@@ -2,7 +2,7 @@
 <% provide(:button_text, 'Already read') %>
 <h1>通知一覧</h1>
 <% @notifications.each do |notification| %>
-  <% if notification.hidden_notification?(notification) %>
+  <% if notification.is_read? %>
     <div class ="notifications">
       <ul>
         <span class="time_ago"><%= notification.time_ago(notification) %></span>

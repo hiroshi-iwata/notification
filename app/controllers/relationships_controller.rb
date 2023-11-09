@@ -8,7 +8,7 @@ class RelationshipsController < ApplicationController
       format.html { redirect_to @user }
       format.turbo_stream
     end
-    Relationship.follow_notification(@user,current_user)
+    Notification.create_follow_notification(@user,current_user)
   end
 
   def destroy
