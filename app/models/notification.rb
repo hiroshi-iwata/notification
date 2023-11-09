@@ -74,6 +74,7 @@ class Notification < ApplicationRecord
         change_hidden(user)
       else
         puts "通知の作成に失敗しました。"
+        raise "通知の作成に失敗しました。"
       end
     else
     end
