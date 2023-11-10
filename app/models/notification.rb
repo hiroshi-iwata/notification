@@ -49,8 +49,6 @@ class Notification < ApplicationRecord
     first_recent_notification = user.notifications.where(status: :initial_notification).first
     if first_recent_notification
       if first_recent_notification.created_at <= INTERVAL
-        # first_recent_notification.status = :else
-        # first_recent_notification.save
         return true
       else
         return false
