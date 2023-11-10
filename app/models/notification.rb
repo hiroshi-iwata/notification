@@ -1,16 +1,16 @@
 class Notification < ApplicationRecord
   INTERVAL = 5.minutes.ago
   scope :recent, -> { where("created_at >= ?", INTERVAL)}
-  scope :recent_follow, -> (notification_interval, user) {
+  scope :recent_follow, -> {
     where(
-      "created_at >= ? AND user_id = ? AND action IN (?)",
-      notification_interval, user.id, ['follow', 'summarize_follow']
+      created_at: INTERVAL..Time.current,
+      action: ['follow', 'summarize_follow']
     )
   }
-  scope :only_recent_follow, -> (notification_interval, user) {
+  scope :only_recent_follow, -> {
     where(
-      "created_at >= ? AND user_id = ? AND action = ?",
-      notification_interval, user.id, "follow"
+      created_at: INTERVAL..Time.current,
+      action: 'follow'
     )
   }
   default_scope -> { order(created_at: :desc) }
@@ -18,21 +18,21 @@ class Notification < ApplicationRecord
   belongs_to :user
   enum status: [:else, :initial_notification]
 
-  def self.create_follow_notification(user, current_user)
-    @notification = user.notifications.new(
-        message: current_user.name.to_s + "さんにフォローされました。",
+  def self.create_follow_notification(followed_user, follower_user)
+    @notification = followed_user.notifications.new(
+        message: follower_user.name.to_s + "さんにフォローされました。",
         action: "follow",
-        relationship_id: Relationship.find_by(followed_id: user.id, follower_id: current_user.id).id,
-        status: 0
+        relationship_id: Relationship.find_by(followed_id: followed_user.id, follower_id: follower_user.id).id,
+        status: :else
       )
     if @notification.save
-      if notification_first?(user) || is_time_expired?(user)
-        oldest_within_period = user.notifications.only_recent_follow(INTERVAL, user).last
-        oldest_within_period.status = 1
+      if notification_first?(followed_user) || within_allowed_time?(followed_user)
+        oldest_within_period = followed_user.notifications.only_recent_follow.last
+        oldest_within_period.status = :initial_notification
         oldest_within_period.save
       else
         puts "through"
-        create_summarize_follow(user,current_user)
+        create_summarize_follow(followed_user, follower_user)
       end
     else
       puts "通知の作成に失敗しました。"
@@ -41,16 +41,16 @@ class Notification < ApplicationRecord
   end
 
   def self.notification_first?(user)
-    recent_notifications_count = user.notifications.recent_follow(INTERVAL, user).count
+    recent_notifications_count = user.notifications.recent_follow.count
     recent_notifications_count == 1
   end
 
-  def self.is_time_expired?(user)
-    threshold_notification = user.notifications.where(status: 1).first
-    if threshold_notification
-      if threshold_notification.created_at <= INTERVAL
-        threshold_notification.status = 0
-        threshold_notification.save
+  def self.within_allowed_time?(user)
+    first_recent_notification = user.notifications.where(status: :initial_notification).first
+    if first_recent_notification
+      if first_recent_notification.created_at <= INTERVAL
+        # first_recent_notification.status = :else
+        # first_recent_notification.save
         return true
       else
         return false
@@ -60,18 +60,18 @@ class Notification < ApplicationRecord
     end
   end
 
-  def self.create_summarize_follow(user,current_user)
-    recent_notifications_count = Notification.where("created_at >= ? AND user_id = ? AND action = ?", INTERVAL, user.id, "follow").count
+  def self.create_summarize_follow(followed_user,follower_user)
+    recent_notifications_count = Notification.where("created_at >= ? AND user_id = ? AND action = ?", INTERVAL, followed_user.id, "follow").count
     if recent_notifications_count >= 2
       display_notification_count = recent_notifications_count - 1
-      @notification = user.notifications.new(
-        message: current_user.name.to_s + "さん他" + display_notification_count.to_s + "名にフォローされました。",
+      @notification = followed_user.notifications.new(
+        message: follower_user.name.to_s + "さん他" + display_notification_count.to_s + "名にフォローされました。",
         action: "summarize_follow",
-        relationship_id: Relationship.find_by(followed_id: user.id, follower_id: current_user.id).id,
-        status: 0
+        relationship_id: Relationship.find_by(followed_id: followed_user.id, follower_id: follower_user.id).id,
+        status: :else
       )
       if @notification.save
-        change_hidden(user)
+        change_hidden(followed_user)
       else
         puts "通知の作成に失敗しました。"
         raise "通知の作成に失敗しました。"
@@ -80,7 +80,7 @@ class Notification < ApplicationRecord
     end
   end
 
-  def self.change_hidden(user)
+  def self.mark_as_read(user)
     latest_created_at = user.notifications.maximum(:created_at)
     user.notifications.where('created_at >= ? AND created_at < ? AND action IN (?)', INTERVAL, latest_created_at, ['follow', 'summarize_follow']).update(read: true)
   end
@@ -95,11 +95,7 @@ class Notification < ApplicationRecord
   end
 
   def is_read?
-    if read == false
-      return true
-    else
-      return false
-    end
+    !read
   end
 
   def time_ago(notification)

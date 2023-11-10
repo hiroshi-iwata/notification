@@ -9,7 +9,7 @@ class NotificationsController < ApplicationController
   def update
     @notification = Notification.find(params[:id])
     @notification.update(read: true)
-    redirect_to controller: 'notifications', action: 'index', id: 'notifications.user_id'
+    redirect_to controller: 'notifications', action: 'index', user_id: 'notifications.user_id'
   end
 
   private
