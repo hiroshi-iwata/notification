@@ -69,7 +69,7 @@ class Notification < ApplicationRecord
         status: :else
       )
       if @notification.save
-        change_hidden(followed_user)
+        mark_as_read(followed_user)
       else
         puts "通知の作成に失敗しました。"
         raise "通知の作成に失敗しました。"
