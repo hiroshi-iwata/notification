@@ -79,7 +79,10 @@ class Notification < ApplicationRecord
 
   def self.mark_as_read(user)
     latest_created_at = user.notifications.maximum(:created_at)
-    user.notifications.where('created_at >= ? AND created_at < ? AND action IN (?)', INTERVAL, latest_created_at, ['follow', 'summarize_follow']).update(read: true)
+    user.notifications
+    .where(
+      created_at: INTERVAL...latest_created_at,
+      action: ['follow', 'summarize_follow']).update_all(read: true)
   end
 
   def follow_action_notification?(notification)
