@@ -26,7 +26,7 @@ class Notification < ApplicationRecord
         status: :else
       )
     if @notification.save
-      if notification_first?(followed_user) || within_allowed_time?(followed_user)
+      if @notification.first? || @notification.within_allowed_time?
         oldest_within_period = followed_user.notifications.only_recent_follow.last
         oldest_within_period.status = :initial_notification
         oldest_within_period.save
@@ -40,26 +40,25 @@ class Notification < ApplicationRecord
     end
   end
 
-  def self.notification_first?(user)
+  def first?
+    user = User.find(self.user_id)
     recent_notifications_count = user.notifications.recent_follow.count
     recent_notifications_count == 1
   end
 
-  def self.within_allowed_time?(user)
-    first_recent_notification = user.notifications.where(status: :initial_notification).first
-    if first_recent_notification
-      if first_recent_notification.created_at <= INTERVAL
-        return true
-      else
-        return false
-      end
-    else
-      return false
-    end
+  def within_allowed_time?
+    user = User.find(self.user_id)
+    initial_notification_recent = user.notifications.where(status: :initial_notification).first
+    return false unless initial_notification_recent
+    initial_notification_recent.created_at <= INTERVAL
   end
 
   def self.create_summarize_follow(followed_user,follower_user)
-    recent_notifications_count = Notification.where("created_at >= ? AND user_id = ? AND action = ?", INTERVAL, followed_user.id, "follow").count
+    recent_notifications_count = Notification.where(
+      created_at: INTERVAL..Time.current,
+      user_id: followed_user.id,
+      action: "follow").count
+
     if recent_notifications_count >= 2
       display_notification_count = recent_notifications_count - 1
       @notification = followed_user.notifications.new(
@@ -90,10 +89,6 @@ class Notification < ApplicationRecord
   def latest_notification?(user)
     latest_notification = user.notifications.order(created_at: :desc).first
     user.notifications.first == latest_notification&.id
-  end
-
-  def is_read?
-    !read
   end
 
   def time_ago(notification)
