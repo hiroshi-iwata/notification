@@ -1,15 +1,15 @@
 class Notification < ApplicationRecord
-  TIME_AGO_INTERVAL = 5.minutes.ago
-  scope :recent, -> { where("created_at >= ?", TIME_AGO_INTERVAL)}
+  TIME_INTERVAL_AGO = 5.minutes.ago
+  scope :recent, -> { where("created_at >= ?", TIME_INTERVAL_AGO)}
   scope :recent_follow, -> {
     where(
-      created_at: TIME_AGO_INTERVAL..Time.current,
+      created_at: TIME_INTERVAL_AGO..Time.current,
       action: ['follow', 'summarize_follow']
     )
   }
   scope :only_recent_follow, -> {
     where(
-      created_at: TIME_AGO_INTERVAL..Time.current,
+      created_at: TIME_INTERVAL_AGO..Time.current,
       action: 'follow'
     )
   }
@@ -25,33 +25,29 @@ class Notification < ApplicationRecord
         relationship_id: Relationship.find_by(followed_id: followed_user.id, follower_id: follower_user.id).id,
         status: :else
       )
-    if @notification.save
-      if @notification.first?
-        oldest_within_period = followed_user.notifications.only_recent_follow.last
-        oldest_within_period.status = :initial_notification
-        oldest_within_period.save
-      else
-        create_summarize_follow(followed_user, follower_user)
-      end
+    if @notification.first?
+      @notification.status = :initial_notification
+      @notification.save
     else
-      raise "通知の作成に失敗しました。"
+      @notification.save
+      create_summarize_follow(followed_user, follower_user)
     end
   end
 
   def first?
     user = User.find(self.user_id)
     recent_notifications_count = user.notifications.recent_follow.count
-    return true if recent_notifications_count == 1
+    return true if recent_notifications_count == 0
 
-    initial_notification_recent = user.notifications.where(status: :initial_notification).first
-    return true unless initial_notification_recent
+    recent_initial_notification = user.notifications.where(status: :initial_notification).first
+    return true unless recent_initial_notification
 
-    initial_notification_recent.created_at <= TIME_AGO_INTERVAL
+    recent_initial_notification.created_at <= TIME_INTERVAL_AGO
   end
 
   def self.create_summarize_follow(followed_user,follower_user)
     recent_notifications_count = Notification.where(
-      created_at: TIME_AGO_INTERVAL..Time.current,
+      created_at: TIME_INTERVAL_AGO..Time.current,
       user_id: followed_user.id,
       action: "follow").count
 
@@ -77,7 +73,7 @@ class Notification < ApplicationRecord
     latest_created_at = user.notifications.maximum(:created_at)
     user.notifications
     .where(
-      created_at: TIME_AGO_INTERVAL...latest_created_at,
+      created_at: TIME_INTERVAL_AGO...latest_created_at,
       action: ['follow', 'summarize_follow']).update_all(read: true)
   end
 
