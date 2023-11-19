@@ -19,17 +19,17 @@ class Notification < ApplicationRecord
   enum status: [:else, :initial_notification]
 
   def self.create_follow_notification(followed_user, follower_user)
-    @notification = followed_user.notifications.new(
+    notification = followed_user.notifications.new(
         message: follower_user.name.to_s + "さんにフォローされました。",
         action: "follow",
         relationship_id: Relationship.find_by(followed_id: followed_user.id, follower_id: follower_user.id).id,
         status: :else
       )
-    if @notification.first?
-      @notification.status = :initial_notification
-      @notification.save
+    if notification.first?
+      notification.status = :initial_notification
+      notification.save
     else
-      @notification.save
+      notification.save
       create_summarize_follow(followed_user, follower_user)
     end
   end
