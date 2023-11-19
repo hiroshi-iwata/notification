@@ -53,13 +53,13 @@ class Notification < ApplicationRecord
 
     if recent_notifications_count >= 2
       display_notification_count = recent_notifications_count - 1
-      @notification = followed_user.notifications.new(
+      notification = followed_user.notifications.new(
         message: follower_user.name.to_s + "さん他" + display_notification_count.to_s + "名にフォローされました。",
         action: "summarize_follow",
         relationship_id: Relationship.find_by(followed_id: followed_user.id, follower_id: follower_user.id).id,
         status: :else
       )
-      if @notification.save
+      if notification.save
         mark_as_read(followed_user)
       else
         puts "通知の作成に失敗しました。"
