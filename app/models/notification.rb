@@ -48,7 +48,6 @@ class Notification < ApplicationRecord
   def create_summarize_follow
     followed_user = relationship.followed
     follower_user = relationship.follower
-    pp 'aaaaaaaaaaaaaaaa', followed_user
     recent_notifications_count = Notification.where(
       created_at: TIME_INTERVAL_AGO..Time.current,
       user_id: followed_user.id,
