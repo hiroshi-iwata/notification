@@ -30,7 +30,7 @@ class Notification < ApplicationRecord
       notification.save
     else
       notification.save
-      create_summarize_follow(followed_user, follower_user)
+      notification.create_summarize_follow
     end
   end
 
@@ -45,7 +45,10 @@ class Notification < ApplicationRecord
     recent_initial_notification.created_at <= TIME_INTERVAL_AGO
   end
 
-  def self.create_summarize_follow(followed_user,follower_user)
+  def create_summarize_follow
+    followed_user = relationship.followed
+    follower_user = relationship.follower
+    pp 'aaaaaaaaaaaaaaaa', followed_user
     recent_notifications_count = Notification.where(
       created_at: TIME_INTERVAL_AGO..Time.current,
       user_id: followed_user.id,
@@ -62,17 +65,14 @@ class Notification < ApplicationRecord
       if notification.save
         mark_as_read(followed_user)
       else
-        puts "通知の作成に失敗しました。"
         raise "通知の作成に失敗しました。"
       end
-    else
     end
   end
 
-  def self.mark_as_read(user)
+  def mark_as_read(user)
     latest_created_at = user.notifications.maximum(:created_at)
-    user.notifications
-    .where(
+    user.notifications.where(
       created_at: TIME_INTERVAL_AGO...latest_created_at,
       action: ['follow', 'summarize_follow']).update_all(read: true)
   end
