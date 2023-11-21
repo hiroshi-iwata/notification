@@ -8,7 +8,7 @@ class RelationshipsController < ApplicationController
       format.html { redirect_to @user }
       format.turbo_stream
     end
-    Relationship.follow_notification(@user,current_user)
+    Notification.create_follow_notification(@user,current_user)
   end
 
   def destroy
@@ -18,14 +18,12 @@ class RelationshipsController < ApplicationController
       format.html { redirect_to @user, status: :see_other }
       format.turbo_stream
     end
-    pp 'xxxxxxxxxxxxxxxxxx', @user.notifications
     redisplay_notification
   end
 
   def redisplay_notification
     latest_created_at = @user.notifications.maximum(:created_at)
-    # pp 'xxxxxxxxxxxxxxxxxx', latest_created_at
-    @user.notifications.where('created_at = ?', latest_created_at).update(read: false)
+    @user.notifications.where(created_at: latest_created_at).update(read: false)
   end
 
 end

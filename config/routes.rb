@@ -9,8 +9,8 @@ Rails.application.routes.draw do
   get    "/login",   to: "sessions#new"
   post   "/login",   to: "sessions#create"
   delete "/logout",  to: "sessions#destroy"
-  get '/notification/:id', to:"notifications#show"
-  post '/notification/:id', to:"notifications#update"
+  get '/notifications/:user_id', to:"notifications#index"
+  post '/notifications/:user_id', to:"notifications#update"
   resources :users do
     member do
       get :following, :followers
@@ -20,6 +20,6 @@ Rails.application.routes.draw do
   resources :password_resets,     only: [:new, :create, :edit, :update]
   resources :microposts,          only: [:create, :destroy]
   resources :relationships,       only: [:create, :destroy]
-  resources :notifications,       only: [:show, :update]
+  resources :notifications,       only: [:index, :update]
   get '/microposts', to: 'static_pages#home'
 end

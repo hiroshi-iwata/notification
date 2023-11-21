@@ -1,30 +1,21 @@
 class NotificationsController < ApplicationController
-  before_action :correct_user, only: :show
+  before_action :correct_user, only: :index
 
-  def show
-    @user = User.find(params[:id])
-    @notifications = Notification.where(user_id: params[:id])
+  def index
+    @user = User.find(params[:user_id])
+    @notifications = Notification.where(user_id: params[:user_id])
   end
 
   def update
     @notification = Notification.find(params[:id])
     @notification.update(read: true)
-    redirect_to controller: 'notifications', action: 'show', id: 'notifications.user_id'
-  end
-
-  def judge_multiple
-    @user = User.find(params[:id])
-    @notifications = @user.notifications.order(created_at: :desc)
+    redirect_to controller: 'notifications', action: 'index', user_id: 'notifications.user_id'
   end
 
   private
 
-  def notification_params
-    params.require(:notification).permit(:read)
-  end
-
   def correct_user
-    @user = User.find(params[:id])
+    @user = User.find(params[:user_id])
     redirect_to(root_url, status: :see_other) unless current_user?(@user)
   end
 end
